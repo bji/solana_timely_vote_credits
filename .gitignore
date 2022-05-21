@@ -1,0 +1,6 @@
+/target
+/data
+/data_processed
+/results
+/html
+/Cargo.lock
