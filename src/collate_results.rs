@@ -20,6 +20,10 @@ struct Entry
 
     pub timely_pct : f64,
 
+    pub avg_latency : f64,
+
+    pub total_credits : u64,
+
     pub total_epochs : u64
 }
 
@@ -142,6 +146,16 @@ fn main()
             std::process::exit(-1);
         });
 
+        let total_credits = split[3].to_string().parse::<u64>().unwrap_or_else(|e| {
+            eprintln!("Invalid input line (total credits {}): {}", e, line);
+            std::process::exit(-1);
+        });
+
+        let avg_latency = split[5].to_string().parse::<f64>().unwrap_or_else(|e| {
+            eprintln!("Invalid input line (avg latency {}): {}", e, line);
+            std::process::exit(-1);
+        });
+
         let normal_pct = split[6].to_string().parse::<f64>().unwrap_or_else(|e| {
             eprintln!("Invalid input line (normal pct {}): {}", e, line);
             std::process::exit(-1);
@@ -159,6 +173,8 @@ fn main()
                 total_validators : 0,
                 normal_pct : 0_f64,
                 timely_pct : 0_f64,
+                avg_latency : 0_f64,
+                total_credits : 0_u64,
                 total_epochs : 0_u64
             }
         };
@@ -166,6 +182,8 @@ fn main()
         to_insert.total_validators += total_validators;
         to_insert.normal_pct += normal_pct;
         to_insert.timely_pct += timely_pct;
+        to_insert.avg_latency += avg_latency * (total_credits as f64);
+        to_insert.total_credits += total_credits;
         to_insert.total_epochs += 1;
 
         normal_entries.insert(name.to_string(), to_insert);
@@ -175,6 +193,7 @@ fn main()
     normal_entries.iter_mut().for_each(|(_, e)| {
         e.total_validators /= e.total_epochs;
         e.normal_pct /= e.total_epochs as f64;
+        e.avg_latency /= e.total_credits as f64;
         e.timely_pct /= e.total_epochs as f64;
     });
 
@@ -188,8 +207,9 @@ fn main()
     timely_entries.sort_by(|a, b| b.timely_pct.partial_cmp(&a.timely_pct).unwrap());
 
     println!(
-        "<table class=\"sortable\" border=1><tr><th>Normal Ranking</th><th>TR</th><th>{}</th><th>Name</th><th>Normal \
-         Pct</th><th>Diff</th><th>Timely Pct</th><th>Name</th><th>{}</th><th>NR</th><th>Timely Ranking</th></tr>",
+        "<table class=\"sortable\" border=1><tr><th>Normal Ranking</th><th>TR</th><th>{}</th><th>Name</th><th>Avg \
+         Vote Latency</th><th>Normal Pct</th><th>Diff</th><th>Timely \
+         Pct</th><th>Name</th><th>{}</th><th>NR</th><th>Timely Ranking</th></tr>",
         if of_validators { "Icon" } else { "Population" },
         if of_validators { "Icon" } else { "Population" }
     );
@@ -222,12 +242,13 @@ fn main()
         let timely_normal_index = normal_entries.iter().position(|e| e.name == timely_entry.name).unwrap();
 
         println!(
-            "<tr><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{:0.3}%</td><td>{:0.3}%</td><td>{:0.3}%</td><td>{}</\
-             td><td>{}</td><td>{}</td><td>{}</td></tr>",
+            "<tr><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{:0.5}</td><td>{:0.3}%</td><td>{:0.3}%</td><td>{:0.\
+             3}%</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>",
             i + 1,
             normal_timely_index + 1,
             if of_validators { normal_icon } else { normal_entry.total_validators.to_string() },
             normal_name,
+            normal_entry.avg_latency,
             normal_entry.normal_pct * 100_f64,
             ((normal_entry.timely_pct - normal_entry.normal_pct) / normal_entry.normal_pct) * 100_f64,
             timely_entry.timely_pct * 100_f64,
