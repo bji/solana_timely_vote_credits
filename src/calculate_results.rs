@@ -128,7 +128,9 @@ fn main()
 
             total_latency += i * slots_at_this_latency;
 
-            let slot_credits_reduction = (((std::cmp::max(i, grace) - grace) as f64) * multiplier) as u64;
+            // values of i from 0 to (grace - 1) (inclusive) should get full credits
+
+            let slot_credits_reduction = (((std::cmp::max(i, grace - 1) - (grace - 1)) as f64) * multiplier) as u64;
 
             let slot_credits =
                 if max_credits > slot_credits_reduction { max_credits - slot_credits_reduction } else { 1 };

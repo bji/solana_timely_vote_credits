@@ -22,7 +22,9 @@ struct Entry
 
     pub avg_latency : f64,
 
-    pub total_credits : u64,
+    pub total_normal_credits : u64,
+
+    pub total_timely_credits : u64,
 
     pub total_epochs : u64
 }
@@ -146,8 +148,13 @@ fn main()
             std::process::exit(-1);
         });
 
-        let total_credits = split[3].to_string().parse::<u64>().unwrap_or_else(|e| {
-            eprintln!("Invalid input line (total credits {}): {}", e, line);
+        let total_normal_credits = split[3].to_string().parse::<u64>().unwrap_or_else(|e| {
+            eprintln!("Invalid input line (total normal credits {}): {}", e, line);
+            std::process::exit(-1);
+        });
+
+        let total_timely_credits = split[4].to_string().parse::<u64>().unwrap_or_else(|e| {
+            eprintln!("Invalid input line (total timely credits {}): {}", e, line);
             std::process::exit(-1);
         });
 
@@ -174,7 +181,8 @@ fn main()
                 normal_pct : 0_f64,
                 timely_pct : 0_f64,
                 avg_latency : 0_f64,
-                total_credits : 0_u64,
+                total_normal_credits : 0_u64,
+                total_timely_credits : 0_u64,
                 total_epochs : 0_u64
             }
         };
@@ -182,8 +190,9 @@ fn main()
         to_insert.total_validators += total_validators;
         to_insert.normal_pct += normal_pct;
         to_insert.timely_pct += timely_pct;
-        to_insert.avg_latency += avg_latency * (total_credits as f64);
-        to_insert.total_credits += total_credits;
+        to_insert.avg_latency += avg_latency * (total_normal_credits as f64);
+        to_insert.total_normal_credits += total_normal_credits;
+        to_insert.total_timely_credits += total_timely_credits;
         to_insert.total_epochs += 1;
 
         normal_entries.insert(name.to_string(), to_insert);
@@ -193,7 +202,7 @@ fn main()
     normal_entries.iter_mut().for_each(|(_, e)| {
         e.total_validators /= e.total_epochs;
         e.normal_pct /= e.total_epochs as f64;
-        e.avg_latency /= e.total_credits as f64;
+        e.avg_latency /= e.total_normal_credits as f64;
         e.timely_pct /= e.total_epochs as f64;
     });
 
